@@ -103,13 +103,29 @@ function getFastestPromise(array) {
  */
 function chainPromises(array, action) {
   return new Promise((resolve) => {
-    const res = [];
-    array.forEach((promise) => {
-      promise.then((value) => {
-        res.push(value);
-        if (res.length === array.length) resolve(res.reduce(action), 0);
-      });
-    });
+    let result = null;
+    let index = 0;
+
+    const processNextPromise = () => {
+      if (index >= array.length) {
+        resolve(result);
+        return;
+      }
+
+      const promise = array[index];
+      index += 1;
+
+      promise
+        .then((value) => {
+          result = result === null ? value : action(result, value);
+          processNextPromise();
+        })
+        .catch(() => {
+          processNextPromise();
+        });
+    };
+
+    processNextPromise();
   });
 }
 
